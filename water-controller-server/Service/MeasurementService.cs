@@ -8,18 +8,24 @@ public sealed class MeasurementService(
     ILogger<MeasurementService> logger,
     WaterControllerDbContext db) : IMeasurementService
 {
-    public async Task<Measurement> AddMeasurement(Measurement measurement)
+    public async Task<MeasurementOutputViewModel> AddMeasurement(MeasurementInputViewModel input)
     {
         logger.LogInformation(
             "Received measurement: device={DeviceId}, interval={IntervalSeconds}s, pulses={Pulses}, timestamp={Timestamp}",
-            measurement.DeviceId,
-            measurement.IntervalSeconds,
-            measurement.PulsesLastSecond,
-            measurement.Timestamp);
+            input.DeviceId,
+            input.IntervalSeconds,
+            input.Pulses,
+            input.Timestamp);
+
+        var measurement = new Measurement(
+            input.DeviceId,
+            input.IntervalSeconds,
+            input.Pulses,
+            input.Timestamp);
 
         db.Measurements.Add(measurement);
         await db.SaveChangesAsync();
 
-        return measurement;
+        return MeasurementOutputViewModel.FromMeasurement(measurement);
     }
 }

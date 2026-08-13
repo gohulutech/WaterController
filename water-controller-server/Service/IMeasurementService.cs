@@ -4,5 +4,5 @@ namespace Service;
 
 public interface IMeasurementService
 {
-    Task<Measurement> AddMeasurement(Measurement measurement);
+    Task<MeasurementOutputViewModel> AddMeasurement(MeasurementInputViewModel input);
 }

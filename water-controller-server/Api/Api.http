@@ -10,9 +10,19 @@ Content-Type: application/json
 
 {
   "device_id": "esp32-flow-01",
-  "intervalSeconds": 1,
-  "pulses_last_second": 42,
+  "intervalSeconds": 10,
+  "pulses": 42,
   "timestamp": 1786050000
 }
+
+###
+
+GET {{Api_HostAddress}}/api/v1/water/consumption?range=24h&interval=1h
+Accept: application/json
+
+###
+
+GET {{Api_HostAddress}}/api/v1/water/consumption?range=7d&interval=1d&deviceId=ESP32_FLOW_METER_001
+Accept: application/json
 
 ###

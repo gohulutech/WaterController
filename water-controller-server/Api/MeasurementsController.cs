@@ -11,14 +11,14 @@ public class MeasurementsController(IMeasurementService measurementService) : Co
     /// <summary>
     /// Receives a flow measurement from a device.
     /// Payload format (as sent by the ESP32 firmware) is:
-    /// {"device_id":"%s","intervalSeconds":1,"pulses_last_second":%d,"timestamp":%ld}
+    /// {"device_id":"%s","intervalSeconds":10,"pulses":%d,"timestamp":%ld}
     /// </summary>
     [HttpPost]
-    public async Task<ActionResult<Measurement>> Post(Measurement measurement)
+    public async Task<ActionResult<MeasurementOutputViewModel>> Post(MeasurementInputViewModel measurement)
     {
         Console.WriteLine(
             $"[DEBUG] POST /api/measurements: device={measurement.DeviceId}, interval={measurement.IntervalSeconds}s, " +
-            $"pulses={measurement.PulsesLastSecond}, timestamp={measurement.Timestamp}");
+            $"pulses={measurement.Pulses}, timestamp={measurement.Timestamp}");
 
         return Ok(await measurementService.AddMeasurement(measurement));
     }
