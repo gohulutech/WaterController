@@ -1,0 +1,22 @@
+# PostgreSQL database for the water controller server.
+# Usage: docker compose up -d
+services:
+  db:
+    build: ./database
+    container_name: water-controller-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d water_controller"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  db-data:
