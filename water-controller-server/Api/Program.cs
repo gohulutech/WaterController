@@ -1,8 +1,15 @@
+using Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Service;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddControllers();
+builder.Services.AddScoped<IMeasurementService, MeasurementService>();
+builder.Services.AddDbContext<WaterControllerDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("WaterController")));
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
