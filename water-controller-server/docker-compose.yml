@@ -1,4 +1,4 @@
-# PostgreSQL database for the water controller server.
+# Water controller server stack: PostgreSQL database + API.
 # Usage: docker compose up -d
 services:
   db:
@@ -17,6 +17,23 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+
+  api:
+    build:
+      context: .
+      dockerfile: Api/Dockerfile
+    container_name: water-controller-api
+    environment:
+      # Override the localhost connection string from appsettings.json so the
+      # API talks to the db service on the compose network.
+      ConnectionStrings__WaterController: Host=db;Port=5432;Database=water_controller;Username=postgres;Password=postgres
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "8080:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   db-data:

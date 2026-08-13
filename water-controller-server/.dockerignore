@@ -1,0 +1,11 @@
+# Build context exclusions for the water controller server.
+**/bin/
+**/obj/
+.git/
+.gitignore
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+database/
+*.user
+.vscode/
