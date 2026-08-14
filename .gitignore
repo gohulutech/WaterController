@@ -77,3 +77,4 @@ Thumbs.db
 *~
 .idea/
 **/.omo
+**/.cache/clangd/
