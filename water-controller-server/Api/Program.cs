@@ -28,8 +28,6 @@ if (app.Environment.IsDevelopment())
 
 app.MapControllers();
 
-app.UseHttpsRedirection();
-
 app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
