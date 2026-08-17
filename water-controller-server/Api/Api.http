@@ -1,8 +1,5 @@
 @Api_HostAddress = http://localhost:5271
 
-GET {{Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
 ###
 
 POST {{Api_HostAddress}}/api/measurements
@@ -17,12 +14,12 @@ Content-Type: application/json
 
 ###
 
-GET {{Api_HostAddress}}/api/v1/water/consumption?range=24h&interval=1h
+GET {{Api_HostAddress}}/api/consumption?range=24h&interval=1h
 Accept: application/json
 
 ###
 
-GET {{Api_HostAddress}}/api/v1/water/consumption?range=7d&interval=1d&deviceId=ESP32_FLOW_METER_001
+GET {{Api_HostAddress}}/api/consumption?range=7d&interval=1d&deviceId=ESP32_FLOW_METER_001
 Accept: application/json
 
 ###

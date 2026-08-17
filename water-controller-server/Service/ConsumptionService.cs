@@ -1,5 +1,6 @@
 using Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Model.Services;
 using Model;
 
 namespace Service;

@@ -1,17 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
 using Model;
-using Service;
+using Model.Services;
 
 namespace Api;
 
 [ApiController]
-[Route("api/v1/water/[controller]")]
+[Route("api/[controller]")]
 public class ConsumptionController(IConsumptionService consumptionService) : ControllerBase
 {
     /// <summary>
     /// Returns consumed liters over a time range, bucketed by interval.
-    /// Examples: /api/v1/water/consumption?range=24h&amp;interval=1h
-    ///           /api/v1/water/consumption?range=7d&amp;interval=1d
+    /// Examples: /api/consumption?range=24h&amp;interval=1h
+    ///           /api/consumption?range=7d&amp;interval=1d
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<ConsumptionOutputViewModel>> Get(
