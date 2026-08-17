@@ -19,15 +19,13 @@ export default function Dashboard() {
 
     fetchConsumption({ range, interval })
       .then((data) => {
-        if (!cancelled) {
-          setBuckets(data.buckets);
-          setError(null);
-        }
+        if (cancelled) return;
+        setBuckets(data.buckets);
+        setError(null);
       })
       .catch((err) => {
-        if (!cancelled) {
-          setError(err.message);
-        }
+        if (cancelled) return;
+        setError(err.message);
       });
 
     return () => {

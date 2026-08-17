@@ -1,0 +1,40 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "water-controller-web/**"
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, ARM64]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Configure environment
+        run: |
+          cp /opt/water-controller-web/.env.production water-controller-web/.env.production
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: water-controller-web
+
+      - name: Build
+        run: pnpm build
+        working-directory: water-controller-web
+
+      - name: Deploy
+        run: |
+          mkdir -p /var/www/water-controller-web
+          rm -rf /var/www/water-controller-web/*
+          cp -r water-controller-web/dist/. /var/www/water-controller-web/
