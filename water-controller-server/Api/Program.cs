@@ -13,6 +13,15 @@ builder.Services.AddScoped<IConsumptionService, ConsumptionService>();
 builder.Services.AddDbContext<WaterControllerDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("WaterController")));
 builder.Services.AddOpenApi();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
@@ -27,6 +36,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseCors();
 app.MapControllers();
 
 app.Run();
