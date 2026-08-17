@@ -1,9 +1,10 @@
 import "./App.css";
+import Dashboard from "./components/Dashboard/Dashboard";
 
 function App() {
   return (
     <>
-      Water controller app
+      <Dashboard />
       <section id="spacer"></section>
     </>
   );
