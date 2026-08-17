@@ -2,6 +2,7 @@
 #include "settings.h"
 #include "esp_log.h"
 #include "cJSON.h"
+#include <stdbool.h>
 #include <string.h>
 
 static const char *TAG = "HTTP_SRV";
@@ -55,30 +56,95 @@ static esp_err_t config_post_handler(httpd_req_t *req)
         return ESP_FAIL;
     }
 
+    bool any_field = false;
+
     cJSON *endpoint_item = cJSON_GetObjectItemCaseSensitive(root, "endpoint");
-    if (!cJSON_IsString(endpoint_item))
+    if (endpoint_item != NULL)
     {
-        cJSON_Delete(root);
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing or invalid 'endpoint' field");
-        return ESP_FAIL;
+        if (!cJSON_IsString(endpoint_item))
+        {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "'endpoint' must be a string");
+            return ESP_FAIL;
+        }
+
+        const char *endpoint = endpoint_item->valuestring;
+        size_t len = strlen(endpoint);
+        if (len == 0 || len > SETTINGS_ENDPOINT_MAX_LEN ||
+            (strncmp(endpoint, "http://", 7) != 0 && strncmp(endpoint, "https://", 8) != 0))
+        {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "endpoint must be a valid http(s) URL");
+            return ESP_FAIL;
+        }
+
+        esp_err_t err = settings_set_endpoint(endpoint);
+        if (err != ESP_OK)
+        {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store endpoint");
+            return ESP_FAIL;
+        }
+        any_field = true;
     }
 
-    const char *endpoint = endpoint_item->valuestring;
-    size_t len = strlen(endpoint);
-    if (len == 0 || len > SETTINGS_ENDPOINT_MAX_LEN ||
-        (strncmp(endpoint, "http://", 7) != 0 && strncmp(endpoint, "https://", 8) != 0))
+    cJSON *name_item = cJSON_GetObjectItemCaseSensitive(root, "deviceName");
+    if (name_item != NULL)
     {
-        cJSON_Delete(root);
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "endpoint must be a valid http(s) URL");
-        return ESP_FAIL;
+        if (!cJSON_IsString(name_item))
+        {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "'deviceName' must be a string");
+            return ESP_FAIL;
+        }
+
+        const char *name = name_item->valuestring;
+        size_t len = strlen(name);
+        if (len == 0 || len > SETTINGS_DEVICE_NAME_MAX_LEN)
+        {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "deviceName must be 1 to 64 characters");
+            return ESP_FAIL;
+        }
+
+        esp_err_t err = settings_set_device_name(name);
+        if (err != ESP_OK)
+        {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store device name");
+            return ESP_FAIL;
+        }
+        any_field = true;
     }
 
-    esp_err_t err = settings_set_endpoint(endpoint);
+    cJSON *interval_item = cJSON_GetObjectItemCaseSensitive(root, "measurementInterval");
+    if (interval_item != NULL)
+    {
+        if (!cJSON_IsNumber(interval_item) ||
+            interval_item->valuedouble != (double)interval_item->valueint ||
+            interval_item->valueint < SETTINGS_MEASUREMENT_INTERVAL_MIN_SECONDS ||
+            interval_item->valueint > SETTINGS_MEASUREMENT_INTERVAL_MAX_SECONDS)
+        {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "measurementInterval must be an integer between 1 and 86400 seconds");
+            return ESP_FAIL;
+        }
+
+        esp_err_t err = settings_set_measurement_interval((uint32_t)interval_item->valueint);
+        if (err != ESP_OK)
+        {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store measurement interval");
+            return ESP_FAIL;
+        }
+        any_field = true;
+    }
+
     cJSON_Delete(root);
 
-    if (err != ESP_OK)
+    if (!any_field)
     {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store endpoint");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "No configurable fields provided (endpoint, deviceName, measurementInterval)");
         return ESP_FAIL;
     }
 
