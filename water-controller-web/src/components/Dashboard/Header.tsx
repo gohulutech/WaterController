@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 interface HeaderProps {
   range: string;
   interval: string;
@@ -6,18 +8,20 @@ interface HeaderProps {
 }
 
 export default function Header({ range, interval, onRangeChange, onIntervalChange }: HeaderProps) {
+  const { t } = useTranslation();
+
   return (
     <div style={styles.header}>
-      <h1 style={styles.title}>Water Consumption Dashboard</h1>
+      <h1 style={styles.title}>{t("dashboard.title")}</h1>
       <div style={styles.controls}>
         <select value={range} onChange={(e) => onRangeChange(e.target.value)} style={styles.select}>
-          <option value="1d">1 Day</option>
-          <option value="7d">7 Days</option>
-          <option value="30d">30 Days</option>
+          <option value="1d">{t("header.range.1d")}</option>
+          <option value="7d">{t("header.range.7d")}</option>
+          <option value="30d">{t("header.range.30d")}</option>
         </select>
         <select value={interval} onChange={(e) => onIntervalChange(e.target.value)} style={styles.select}>
-          <option value="1h">1 Hour</option>
-          <option value="1d">1 Day</option>
+          <option value="1h">{t("header.interval.1h")}</option>
+          <option value="1d">{t("header.interval.1d")}</option>
         </select>
       </div>
     </div>

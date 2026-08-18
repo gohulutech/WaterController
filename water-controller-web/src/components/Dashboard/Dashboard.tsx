@@ -44,7 +44,7 @@ export default function Dashboard() {
         onIntervalChange={setInterval}
       />
       {error && <div style={styles.error}>{error}</div>}
-      <SummaryCards buckets={buckets} range={range} />
+      <SummaryCards buckets={buckets} range={range} interval={interval} />
       <ConsumptionChart buckets={buckets} />
       <BucketTable buckets={buckets} totalLiters={totalLiters} />
     </div>

@@ -1,0 +1,42 @@
+{
+  "dashboard": {
+    "title": "Water Consumption Dashboard"
+  },
+  "header": {
+    "range": {
+      "1d": "1 Day",
+      "7d": "7 Days",
+      "30d": "30 Days"
+    },
+    "interval": {
+      "1h": "1 Hour",
+      "1d": "1 Day"
+    }
+  },
+  "summary": {
+    "totalVolume": "Total Volume",
+    "dailyAverage": "Daily Average",
+    "hourlyAverage": "Hourly Average",
+    "peakSingleDay": "Peak Single Day",
+    "peakSingleHour": "Peak Single Hour",
+    "activeDays": "Active Days",
+    "activeHours": "Active Hours",
+    "withUsage": "with usage",
+    "perDay": "L/day",
+    "perHour": "L/hr"
+  },
+  "chart": {
+    "title": "CONSUMPTION OVER TIME",
+    "liters": "Liters"
+  },
+  "table": {
+    "title": "BUCKET BREAKDOWN",
+    "dateInterval": "Date Interval",
+    "litersConsumed": "Liters Consumed",
+    "percentOfTotal": "% of Total",
+    "status": "Status",
+    "high": "High",
+    "normal": "Normal",
+    "idle": "Idle"
+  }
+}

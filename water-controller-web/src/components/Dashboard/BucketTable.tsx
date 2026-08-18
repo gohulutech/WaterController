@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { format, parseISO } from "date-fns";
 import type { ConsumptionBucket } from "../../api/consumption";
 
@@ -6,28 +7,30 @@ interface BucketTableProps {
   totalLiters: number;
 }
 
-function getStatus(liters: number): { label: string; color: string } {
-  if (liters === 0) return { label: "Idle", color: "#9ca3af" };
-  if (liters <= 100) return { label: "Normal", color: "#22c55e" };
-  return { label: "High", color: "#ef4444" };
+function getStatus(liters: number, t: (key: string) => string): { label: string; color: string } {
+  if (liters === 0) return { label: t("table.idle"), color: "#9ca3af" };
+  if (liters <= 100) return { label: t("table.normal"), color: "#22c55e" };
+  return { label: t("table.high"), color: "#ef4444" };
 }
 
 export default function BucketTable({ buckets, totalLiters }: BucketTableProps) {
+  const { t } = useTranslation();
+
   return (
     <div style={styles.tableSection}>
-      <h2 style={styles.sectionTitle}>BUCKET BREAKDOWN</h2>
+      <h2 style={styles.sectionTitle}>{t("table.title")}</h2>
       <table style={styles.table}>
         <thead>
           <tr>
-            <th style={styles.th}>Date Interval</th>
-            <th style={styles.th}>Liters Consumed</th>
-            <th style={styles.th}>% of Total</th>
-            <th style={styles.th}>Status</th>
+            <th style={styles.th}>{t("table.dateInterval")}</th>
+            <th style={styles.th}>{t("table.litersConsumed")}</th>
+            <th style={styles.th}>{t("table.percentOfTotal")}</th>
+            <th style={styles.th}>{t("table.status")}</th>
           </tr>
         </thead>
         <tbody>
           {buckets.map((bucket, idx) => {
-            const status = getStatus(bucket.liters);
+            const status = getStatus(bucket.liters, t);
             const pct = totalLiters > 0 ? (bucket.liters / totalLiters) * 100 : 0;
             const isZero = bucket.liters === 0;
             return (

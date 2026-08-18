@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   BarChart,
   Bar,
@@ -48,6 +49,8 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Toolti
 }
 
 export default function ConsumptionChart({ buckets }: ConsumptionChartProps) {
+  const { t } = useTranslation();
+
   const chartData = buckets.map((b) => ({
     label: formatAxisDate(b.from),
     liters: b.liters,
@@ -57,7 +60,7 @@ export default function ConsumptionChart({ buckets }: ConsumptionChartProps) {
 
   return (
     <div style={styles.chartSection}>
-      <h2 style={styles.sectionTitle}>CONSUMPTION OVER TIME</h2>
+      <h2 style={styles.sectionTitle}>{t("chart.title")}</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -71,7 +74,7 @@ export default function ConsumptionChart({ buckets }: ConsumptionChartProps) {
           />
           <YAxis
             tick={{ fontSize: 12, fill: "#6b7280" }}
-            label={{ value: "Liters", angle: -90, position: "insideLeft", style: { fontSize: 14, fill: "#6b7280" } }}
+            label={{ value: t("chart.liters"), angle: -90, position: "insideLeft", style: { fontSize: 14, fill: "#6b7280" } }}
           />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="liters" fill="#3b82f6" radius={[4, 4, 0, 0]} />
