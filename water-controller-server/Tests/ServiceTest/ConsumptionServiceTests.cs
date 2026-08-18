@@ -76,7 +76,7 @@ public class ConsumptionServiceTests : IDisposable
         // Two buckets: [0, 300) and [300, 600)
         _db.Measurements.AddRange(
             new Measurement("device-1", 10, 450, now - 100), // bucket 0
-            new Measurement("device-1", 10, 900, now - 400)  // bucket 1
+            new Measurement("device-1", 10, 900, now - 400) // bucket 1
         );
         await _db.SaveChangesAsync();
 
@@ -122,8 +122,8 @@ public class ConsumptionServiceTests : IDisposable
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         _db.Measurements.AddRange(
-            new Measurement("device-1", 10, 450, now - 100),  // in range
-            new Measurement("device-1", 10, 450, now - 1000)  // out of range (1000s ago, range is 600s)
+            new Measurement("device-1", 10, 450, now - 100), // in range
+            new Measurement("device-1", 10, 450, now - 1000) // out of range (1000s ago, range is 600s)
         );
         await _db.SaveChangesAsync();
 
@@ -153,8 +153,54 @@ public class ConsumptionServiceTests : IDisposable
 
         Assert.Equal(2, result.Buckets.Count);
         // First bucket
-        Assert.True(result.Buckets[0].To - result.Buckets[0].From == TimeSpan.FromSeconds(intervalSeconds));
+        Assert.True(
+            result.Buckets[0].To - result.Buckets[0].From == TimeSpan.FromSeconds(intervalSeconds)
+        );
         // Buckets are contiguous
         Assert.Equal(result.Buckets[0].To, result.Buckets[1].From);
+    }
+
+    [Fact]
+    public async Task GetConsumption_WithOffsetMinute_RangeStartSnappedToNextMidnight()
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var offsetMinutes = -300; // UTC-5 (Bogotá)
+        var offsetSeconds = offsetMinutes * 60;
+        var rangeSeconds = 86400L;
+        var intervalSeconds = 3600L;
+
+        var rangeStart = now - rangeSeconds;
+        var secondsSinceLocalMidnight = (rangeStart + offsetSeconds) % 86400;
+        if (secondsSinceLocalMidnight < 0) secondsSinceLocalMidnight += 86400;
+        var expectedRangeStart = rangeStart + (86400 - secondsSinceLocalMidnight);
+
+        var result = await _sut.GetConsumption(rangeSeconds, intervalSeconds, null, offsetMinutes);
+
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(expectedRangeStart), result.Buckets[0].From);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(now), result.Buckets[^1].To);
+    }
+
+    [Fact]
+    public async Task GetConsumption_WithOffsetMinute_FewerBucketsThanRangeDivInterval()
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var offsetMinutes = -300;
+        var intervalSeconds = 3600L;
+
+        var result = await _sut.GetConsumption(86400, intervalSeconds, null, offsetMinutes);
+
+        Assert.True(result.Buckets.Count <= 24);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(now), result.Buckets[^1].To);
+    }
+
+    [Fact]
+    public async Task GetConsumption_ZeroOffset_BucketsNotSnapped()
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        var result = await _sut.GetConsumption(86400, 86400, null, 0);
+
+        Assert.Single(result.Buckets);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(now), result.Buckets[0].To);
     }
 }

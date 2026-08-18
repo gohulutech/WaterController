@@ -12,11 +12,18 @@ public class ConsumptionController(IConsumptionService consumptionService) : Con
     /// Examples: /api/consumption?range=24h&amp;interval=1h
     ///           /api/consumption?range=7d&amp;interval=1d
     /// </summary>
+    /// <summary>
+    /// Returns consumed liters over a time range, bucketed by interval.
+    /// Examples: /api/consumption?range=24h&amp;interval=1h
+    ///           /api/consumption?range=7d&amp;interval=1d&amp;offsetMinutes=-300
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<ConsumptionOutputDto>> Get(
         [FromQuery] string range,
         [FromQuery] string interval,
-        [FromQuery] string? deviceId = null)
+        [FromQuery] string? deviceId = null,
+        [FromQuery] int? offsetMinutes = null
+    )
     {
         if (!DurationParser.TryParse(range, out var rangeSeconds))
         {
@@ -34,6 +41,14 @@ public class ConsumptionController(IConsumptionService consumptionService) : Con
         }
 
         var normalizedDeviceId = string.IsNullOrWhiteSpace(deviceId) ? null : deviceId.Trim();
-        return Ok(await consumptionService.GetConsumption(rangeSeconds, intervalSeconds, normalizedDeviceId));
+        var offset = offsetMinutes ?? 0;
+        return Ok(
+            await consumptionService.GetConsumption(
+                rangeSeconds,
+                intervalSeconds,
+                normalizedDeviceId,
+                offset
+            )
+        );
     }
 }

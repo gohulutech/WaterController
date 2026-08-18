@@ -23,7 +23,11 @@ export default function Dashboard() {
   useEffect(() => {
     let cancelled = false;
 
-    fetchConsumption({ range, interval })
+    fetchConsumption({
+      range,
+      interval,
+      offsetMinutes: -new Date().getTimezoneOffset(),
+    })
       .then((data) => {
         if (cancelled) return;
         setBuckets(data.buckets);

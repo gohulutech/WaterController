@@ -15,9 +15,12 @@ export interface ConsumptionParams {
   range: string; // e.g. "24h", "7d", "30d"
   interval: string; // e.g. "1h", "1d"
   deviceId?: string;
+  offsetMinutes?: number;
 }
 
-export async function fetchConsumption(params: ConsumptionParams): Promise<ConsumptionResponse> {
+export async function fetchConsumption(
+  params: ConsumptionParams,
+): Promise<ConsumptionResponse> {
   const query = new URLSearchParams({
     range: params.range,
     interval: params.interval,
@@ -26,6 +29,9 @@ export async function fetchConsumption(params: ConsumptionParams): Promise<Consu
   if (params.deviceId) {
     query.set("deviceId", params.deviceId);
   }
+
+  if (params.offsetMinutes != null)
+    query.set("offsetMinutes", String(params.offsetMinutes));
 
   const res = await fetch(`${API_BASE}/consumption?${query}`);
 

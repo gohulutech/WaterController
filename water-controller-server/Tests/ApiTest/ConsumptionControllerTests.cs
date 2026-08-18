@@ -21,7 +21,7 @@ public class ConsumptionControllerTests
     public async Task Get_ValidRequest_ReturnsOkWithResult()
     {
         var expected = new ConsumptionOutputDto(10.5, []);
-        _consumptionService.GetConsumption(86400, 3600, null).Returns(expected);
+        _consumptionService.GetConsumption(86400, 3600, null, 0).Returns(expected);
 
         var result = await _sut.Get("24h", "1h", null);
 
@@ -60,7 +60,7 @@ public class ConsumptionControllerTests
     public async Task Get_WithDeviceId_PassesToDeviceService()
     {
         var expected = new ConsumptionOutputDto(5.0, []);
-        _consumptionService.GetConsumption(86400, 3600, "device-1").Returns(expected);
+        _consumptionService.GetConsumption(86400, 3600, "device-1", 0).Returns(expected);
 
         var result = await _sut.Get("24h", "1h", "device-1");
 
@@ -72,7 +72,7 @@ public class ConsumptionControllerTests
     public async Task Get_WhitespaceDeviceId_NormalizesToNull()
     {
         var expected = new ConsumptionOutputDto(5.0, []);
-        _consumptionService.GetConsumption(86400, 3600, null).Returns(expected);
+        _consumptionService.GetConsumption(86400, 3600, null, 0).Returns(expected);
 
         var result = await _sut.Get("24h", "1h", "   ");
 
@@ -84,7 +84,7 @@ public class ConsumptionControllerTests
     public async Task Get_TrimsDeviceIdWhitespace()
     {
         var expected = new ConsumptionOutputDto(5.0, []);
-        _consumptionService.GetConsumption(86400, 3600, "device-1").Returns(expected);
+        _consumptionService.GetConsumption(86400, 3600, "device-1", 0).Returns(expected);
 
         var result = await _sut.Get("24h", "1h", "  device-1  ");
 
@@ -96,18 +96,44 @@ public class ConsumptionControllerTests
     [InlineData("30s", "30s")]
     [InlineData("5m", "5m")]
     [InlineData("7d", "1d")]
-    public async Task Get_ValidDurations_CallsServiceWithCorrectSeconds(string range, string interval)
+    public async Task Get_ValidDurations_CallsServiceWithCorrectSeconds(
+        string range,
+        string interval
+    )
     {
         var expected = new ConsumptionOutputDto(0, []);
         _consumptionService
-            .GetConsumption(Arg.Any<long>(), Arg.Any<long>(), Arg.Any<string?>())
+            .GetConsumption(Arg.Any<long>(), Arg.Any<long>(), Arg.Any<string?>(), Arg.Any<int>())
             .Returns(expected);
 
         await _sut.Get(range, interval);
 
-        await _consumptionService.Received(1).GetConsumption(
-            Arg.Any<long>(),
-            Arg.Any<long>(),
-            Arg.Any<string?>());
+        await _consumptionService
+            .Received(1)
+            .GetConsumption(Arg.Any<long>(), Arg.Any<long>(), Arg.Any<string?>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task Get_WithOffsetMinutes_PassesToService()
+    {
+        var expected = new ConsumptionOutputDto(5.0, []);
+        _consumptionService.GetConsumption(86400, 3600, null, -300).Returns(expected);
+
+        var result = await _sut.Get("24h", "1h", null, -300);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(expected, okResult.Value);
+    }
+
+    [Fact]
+    public async Task Get_NullOffsetMinutes_PassesZeroToService()
+    {
+        var expected = new ConsumptionOutputDto(5.0, []);
+        _consumptionService.GetConsumption(86400, 3600, null, 0).Returns(expected);
+
+        var result = await _sut.Get("24h", "1h", null, null);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(expected, okResult.Value);
     }
 }
