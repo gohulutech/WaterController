@@ -8,11 +8,17 @@ import SummaryCards from "./SummaryCards";
 import ConsumptionChart from "./ConsumptionChart";
 import BucketTable from "./BucketTable";
 
+function parseFilter(filter: string): { range: string; interval: string } {
+  const [range, interval] = filter.split("-");
+  return { range, interval };
+}
+
 export default function Dashboard() {
-  const [range, setRange] = useState("7d");
-  const [interval, setInterval] = useState("1d");
+  const [filter, setFilter] = useState("7d-1d");
   const [buckets, setBuckets] = useState<ConsumptionBucket[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const { range, interval } = parseFilter(filter);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,12 +43,7 @@ export default function Dashboard() {
 
   return (
     <div style={styles.container}>
-      <Header
-        range={range}
-        interval={interval}
-        onRangeChange={setRange}
-        onIntervalChange={setInterval}
-      />
+      <Header filter={filter} onFilterChange={setFilter} />
       {error && <div style={styles.error}>{error}</div>}
       <SummaryCards buckets={buckets} range={range} interval={interval} />
       <ConsumptionChart buckets={buckets} />
