@@ -1,9 +1,9 @@
 <Solution>
-  <Project Path="Api/Api.csproj" />
-  <Project Path="ApiTest/ApiTest.csproj" />
-  <Project Path="Infrastructure/Infrastructure.csproj" />
-  <Project Path="Model/Model.csproj" />
-  <Project Path="ModelTest/ModelTest.csproj" />
-  <Project Path="Service/Service.csproj" />
-  <Project Path="ServiceTest/ServiceTest.csproj" />
+  <Project Path="src/Api/Api.csproj" />
+  <Project Path="src/Infrastructure/Infrastructure.csproj" />
+  <Project Path="src/Model/Model.csproj" />
+  <Project Path="src/Service/Service.csproj" />
+  <Project Path="tests/ApiTest/ApiTest.csproj" />
+  <Project Path="tests/ModelTest/ModelTest.csproj" />
+  <Project Path="tests/ServiceTest/ServiceTest.csproj" />
 </Solution>
