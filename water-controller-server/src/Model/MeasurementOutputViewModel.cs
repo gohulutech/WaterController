@@ -13,13 +13,11 @@ public sealed record MeasurementOutputViewModel(
     [property: JsonPropertyName("timestamp")] long Timestamp,
     [property: JsonPropertyName("litersPerSecond")] double LitersPerSecond)
 {
-    public const int PulsesPerLiter = 450;
-
     public static MeasurementOutputViewModel FromMeasurement(Measurement measurement) =>
         new(
             measurement.Id,
             measurement.DeviceId,
             measurement.IntervalSeconds,
             measurement.Timestamp,
-            measurement.Pulses / (double)PulsesPerLiter / measurement.IntervalSeconds);
+            measurement.Pulses / (double)Device.PulsesPerLiter / measurement.IntervalSeconds);
 }

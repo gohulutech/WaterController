@@ -53,6 +53,6 @@ public class MeasurementOutputViewModelTests
     [Fact]
     public void PulsesPerLiter_Is450()
     {
-        Assert.Equal(450, MeasurementOutputViewModel.PulsesPerLiter);
+        Assert.Equal(450, Device.PulsesPerLiter);
     }
 }

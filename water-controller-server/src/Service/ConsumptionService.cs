@@ -36,7 +36,7 @@ public sealed class ConsumptionService(WaterControllerDbContext db) : IConsumpti
                 continue;
             }
 
-            var liters = m.Pulses / (double)MeasurementOutputViewModel.PulsesPerLiter;
+            var liters = m.Pulses / (double)Device.PulsesPerLiter;
             buckets[index] = buckets[index] with { Liters = buckets[index].Liters + liters };
         }
 
