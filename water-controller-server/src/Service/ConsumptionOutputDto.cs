@@ -3,6 +3,6 @@ namespace Service;
 /// <summary>
 /// Consumed liters over a time range, split into interval buckets.
 /// </summary>
-public sealed record ConsumptionOutputViewModel(
+public sealed record ConsumptionOutputDto(
     double TotalLiters,
-    IReadOnlyList<ConsumptionBucketViewModel> Buckets);
+    IReadOnlyList<ConsumptionBucketDto> Buckets);

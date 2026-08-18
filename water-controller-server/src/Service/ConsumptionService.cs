@@ -6,7 +6,7 @@ namespace Service;
 
 public sealed class ConsumptionService(WaterControllerDbContext db) : IConsumptionService
 {
-    public async Task<ConsumptionOutputViewModel> GetConsumption(long rangeSeconds, long intervalSeconds, string? deviceId = null)
+    public async Task<ConsumptionOutputDto> GetConsumption(long rangeSeconds, long intervalSeconds, string? deviceId = null)
     {
         var rangeEnd = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var rangeStart = rangeEnd - rangeSeconds;
@@ -18,10 +18,10 @@ public sealed class ConsumptionService(WaterControllerDbContext db) : IConsumpti
             .Select(m => new { m.Timestamp, m.Pulses })
             .ToListAsync();
 
-        var buckets = new List<ConsumptionBucketViewModel>(bucketCount);
+        var buckets = new List<ConsumptionBucketDto>(bucketCount);
         for (var i = 0; i < bucketCount; i++)
         {
-            buckets.Add(new ConsumptionBucketViewModel(
+            buckets.Add(new ConsumptionBucketDto(
                 DateTimeOffset.FromUnixTimeSeconds(rangeStart + i * intervalSeconds),
                 DateTimeOffset.FromUnixTimeSeconds(Math.Min(rangeStart + (i + 1) * intervalSeconds, rangeEnd)),
                 0));
@@ -39,6 +39,6 @@ public sealed class ConsumptionService(WaterControllerDbContext db) : IConsumpti
             buckets[index] = buckets[index] with { Liters = buckets[index].Liters + liters };
         }
 
-        return new ConsumptionOutputViewModel(buckets.Sum(b => b.Liters), buckets);
+        return new ConsumptionOutputDto(buckets.Sum(b => b.Liters), buckets);
     }
 }

@@ -13,7 +13,7 @@ public class ConsumptionController(IConsumptionService consumptionService) : Con
     ///           /api/consumption?range=7d&amp;interval=1d
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult<ConsumptionOutputViewModel>> Get(
+    public async Task<ActionResult<ConsumptionOutputDto>> Get(
         [FromQuery] string range,
         [FromQuery] string interval,
         [FromQuery] string? deviceId = null)

@@ -13,7 +13,7 @@ public class MeasurementsController(IMeasurementService measurementService) : Co
     /// {"device_id":"%s","intervalSeconds":10,"pulses":%d,"timestamp":%ld}
     /// </summary>
     [HttpPost]
-    public async Task<ActionResult<MeasurementOutputViewModel>> Post(MeasurementInputViewModel measurement)
+    public async Task<ActionResult<MeasurementOutputDto>> Post(MeasurementInputDto measurement)
     {
         Console.WriteLine(
             $"[DEBUG] POST /api/measurements: device={measurement.DeviceId}, interval={measurement.IntervalSeconds}s, " +

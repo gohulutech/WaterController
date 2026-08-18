@@ -33,7 +33,7 @@ public class MeasurementServiceTests : IDisposable
     [Fact]
     public async Task AddMeasurement_SavesToDatabase()
     {
-        var input = new MeasurementInputViewModel("device-1", 10, 100, 1234567890);
+        var input = new MeasurementInputDto("device-1", 10, 100, 1234567890);
 
         await _sut.AddMeasurement(input);
 
@@ -45,9 +45,9 @@ public class MeasurementServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task AddMeasurement_ReturnsOutputViewModel()
+    public async Task AddMeasurement_ReturnsOutputDto()
     {
-        var input = new MeasurementInputViewModel("device-1", 10, 450, 1234567890);
+        var input = new MeasurementInputDto("device-1", 10, 450, 1234567890);
 
         var result = await _sut.AddMeasurement(input);
 
@@ -60,7 +60,7 @@ public class MeasurementServiceTests : IDisposable
     [Fact]
     public async Task AddMeasurement_LogsInformation()
     {
-        var input = new MeasurementInputViewModel("device-1", 10, 100, 1234567890);
+        var input = new MeasurementInputDto("device-1", 10, 100, 1234567890);
 
         await _sut.AddMeasurement(input);
 
@@ -75,8 +75,8 @@ public class MeasurementServiceTests : IDisposable
     [Fact]
     public async Task AddMeasurement_MultipleSavesAll()
     {
-        await _sut.AddMeasurement(new MeasurementInputViewModel("device-1", 10, 100, 1000));
-        await _sut.AddMeasurement(new MeasurementInputViewModel("device-2", 5, 200, 2000));
+        await _sut.AddMeasurement(new MeasurementInputDto("device-1", 10, 100, 1000));
+        await _sut.AddMeasurement(new MeasurementInputDto("device-2", 5, 200, 2000));
 
         Assert.Equal(2, await _db.Measurements.CountAsync());
     }

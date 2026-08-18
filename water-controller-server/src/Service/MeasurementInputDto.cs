@@ -9,7 +9,7 @@ namespace Service;
 /// {"device_id":"%s","intervalSeconds":10,"pulses":%d,"timestamp":%ld}
 /// pulses = pulse count accumulated during intervalSeconds.
 /// </summary>
-public sealed record MeasurementInputViewModel(
+public sealed record MeasurementInputDto(
     [property: JsonPropertyName("device_id")] [Required] string DeviceId,
     [property: JsonPropertyName("intervalSeconds")] [Range(1, int.MaxValue)] int IntervalSeconds,
     [property: JsonPropertyName("pulses")] [Range(0, int.MaxValue)] int Pulses,
