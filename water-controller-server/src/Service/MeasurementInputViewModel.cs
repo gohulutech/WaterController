@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace Model;
+namespace Service;
 
 /// <summary>
 /// Payload received from a device when reporting a measurement.

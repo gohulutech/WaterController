@@ -1,7 +1,6 @@
 using Infrastructure;
 using Microsoft.Extensions.Logging;
 using Model;
-using Model.Services;
 
 namespace Service;
 

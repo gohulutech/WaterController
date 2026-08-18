@@ -1,4 +1,4 @@
-namespace Model;
+namespace Service;
 
 /// <summary>
 /// One aggregation bucket of the consumption time series.

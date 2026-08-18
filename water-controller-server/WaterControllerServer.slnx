@@ -4,6 +4,5 @@
   <Project Path="src/Model/Model.csproj" />
   <Project Path="src/Service/Service.csproj" />
   <Project Path="tests/ApiTest/ApiTest.csproj" />
-  <Project Path="tests/ModelTest/ModelTest.csproj" />
   <Project Path="tests/ServiceTest/ServiceTest.csproj" />
 </Solution>

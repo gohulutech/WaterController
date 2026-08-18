@@ -1,7 +1,8 @@
 using Model;
+using Service;
 using Xunit;
 
-namespace ModelTest;
+namespace ServiceTest;
 
 public class MeasurementOutputViewModelTests
 {

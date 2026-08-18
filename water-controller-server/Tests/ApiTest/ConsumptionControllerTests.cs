@@ -1,8 +1,7 @@
 using Api;
 using Microsoft.AspNetCore.Mvc;
-using Model;
-using Model.Services;
 using NSubstitute;
+using Service;
 using Xunit;
 
 namespace ApiTest;

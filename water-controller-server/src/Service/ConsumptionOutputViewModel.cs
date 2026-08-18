@@ -1,4 +1,4 @@
-namespace Model;
+namespace Service;
 
 /// <summary>
 /// Consumed liters over a time range, split into interval buckets.

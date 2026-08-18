@@ -1,6 +1,4 @@
-using Model;
-
-namespace Model.Services;
+namespace Service;
 
 public interface IConsumptionService
 {

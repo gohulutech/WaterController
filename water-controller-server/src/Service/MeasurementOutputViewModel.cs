@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
+using Model;
 
-namespace Model;
+namespace Service;
 
 /// <summary>
 /// Measurement as returned by the API. Raw pulse counts are intentionally

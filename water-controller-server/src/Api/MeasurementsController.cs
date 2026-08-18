@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Model;
-using Model.Services;
+using Service;
 
 namespace Api;
 
