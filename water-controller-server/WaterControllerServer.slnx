@@ -1,6 +1,9 @@
 <Solution>
   <Project Path="Api/Api.csproj" />
+  <Project Path="ApiTest/ApiTest.csproj" />
   <Project Path="Infrastructure/Infrastructure.csproj" />
   <Project Path="Model/Model.csproj" />
+  <Project Path="ModelTest/ModelTest.csproj" />
   <Project Path="Service/Service.csproj" />
+  <Project Path="ServiceTest/ServiceTest.csproj" />
 </Solution>
