@@ -15,6 +15,7 @@ function parseFilter(filter: string): { range: string; interval: string } {
 
 export default function Dashboard() {
   const [filter, setFilter] = useState("7d-1d");
+  const [refreshKey, setRefreshKey] = useState(0);
   const [buckets, setBuckets] = useState<ConsumptionBucket[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,13 +42,13 @@ export default function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [range, interval]);
+  }, [range, interval, refreshKey]);
 
   const totalLiters = buckets.reduce((sum, b) => sum + b.liters, 0);
 
   return (
     <div style={styles.container}>
-      <Header filter={filter} onFilterChange={setFilter} />
+      <Header filter={filter} onFilterChange={setFilter} onRefresh={() => setRefreshKey((k) => k + 1)} />
       {error && <div style={styles.error}>{error}</div>}
       <SummaryCards buckets={buckets} range={range} interval={interval} />
       <ConsumptionChart buckets={buckets} />
