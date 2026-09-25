@@ -1,5 +1,6 @@
 #include "http_server.h"
 #include "settings.h"
+#include "valve_controller.h"
 #include "esp_log.h"
 #include "cJSON.h"
 #include <stdbool.h>
@@ -222,8 +223,19 @@ static esp_err_t apply_valve_state(cJSON *root, httpd_req_t *req, bool *any_fiel
         return ESP_FAIL;
     }
 
-    esp_err_t err = settings_set_valve_state(state);
-    if (err != ESP_OK)
+    esp_err_t valve_err = valve_controller_set_state(state);
+    if (valve_err == ESP_ERR_INVALID_STATE)
+    {
+        httpd_resp_send_err(req, 409, "Valve command already in progress");
+        return ESP_FAIL;
+    }
+    if (valve_err != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to drive valve");
+        return ESP_FAIL;
+    }
+
+    if (settings_set_valve_state(state) != ESP_OK)
     {
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store valve state");
         return ESP_FAIL;

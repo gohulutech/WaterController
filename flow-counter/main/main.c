@@ -10,6 +10,7 @@
 #include "http_client.h"
 #include "time_sync.h"
 #include "flow_sensor.h"
+#include "valve_controller.h"
 
 static const char *TAG = "FLOW";
 
@@ -22,6 +23,8 @@ void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
+    valve_controller_init();
 
     ESP_LOGI(TAG, "Connecting to Wi-Fi...");
     wifi_init_sta();
