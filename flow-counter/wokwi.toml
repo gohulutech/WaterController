@@ -1,0 +1,12 @@
+# Wokwi Configuration File
+# Reference: https://docs.wokwi.com/vscode/project-config
+[wokwi]
+version = 1
+elf = "build/flow-counter.elf"
+firmware = "build/flasher_args.json"
+# gdbServerPort = 3333
+
+# Requires the Private IoT Gateway (Wokwi Club)
+[[net.forward]]
+from = "localhost:8180"
+to = "target:80"

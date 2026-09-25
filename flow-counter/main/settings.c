@@ -8,6 +8,7 @@
 #define SETTINGS_KEY_ENDPOINT "endpoint"
 #define SETTINGS_KEY_DEVICE_NAME "device_name"
 #define SETTINGS_KEY_INTERVAL "interval_sec"
+#define SETTINGS_VALVE_STATE "valve_state"
 
 esp_err_t settings_get_endpoint(char *buf, size_t len)
 {
@@ -126,6 +127,24 @@ esp_err_t settings_set_measurement_interval(uint32_t seconds)
     }
 
     err = nvs_set_u32(handle, SETTINGS_KEY_INTERVAL, seconds);
+    if (err == ESP_OK)
+    {
+        err = nvs_commit(handle);
+    }
+    nvs_close(handle);
+    return err;
+}
+
+esp_err_t settings_set_valve_state(const char *state)
+{
+    nvs_handle_t handle;
+    esp_err_t err = nvs_open(SETTINGS_NS, NVS_READWRITE, &handle);
+    if (err != ESP_OK)
+    {
+        return err;
+    }
+
+    err = nvs_set_str(handle, SETTINGS_VALVE_STATE, state);
     if (err == ESP_OK)
     {
         err = nvs_commit(handle);

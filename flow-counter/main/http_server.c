@@ -7,6 +7,10 @@
 
 static const char *TAG = "HTTP_SRV";
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+
+typedef esp_err_t (*apply_item_fn)(cJSON *root, httpd_req_t *req, bool *any_field);
+
 static esp_err_t ping_get_handler(httpd_req_t *req)
 {
     const char *response = "{\"status\":\"alive\",\"device\":\"ESP32\"}";
@@ -21,7 +25,105 @@ static const httpd_uri_t ping_uri = {
     .handler = ping_get_handler,
     .user_ctx = NULL};
 
-static esp_err_t config_post_handler(httpd_req_t *req)
+static esp_err_t apply_endpoint_item(cJSON *root, httpd_req_t *req, bool *any_field)
+{
+    cJSON *endpoint_item = cJSON_GetObjectItemCaseSensitive(root, "endpoint");
+    if (endpoint_item == NULL)
+    {
+        return ESP_OK;
+    }
+
+    if (!cJSON_IsString(endpoint_item))
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "'endpoint' must be a string");
+        return ESP_FAIL;
+    }
+
+    const char *endpoint = endpoint_item->valuestring;
+    size_t len = strlen(endpoint);
+    if (len == 0 || len > SETTINGS_ENDPOINT_MAX_LEN ||
+        (strncmp(endpoint, "http://", 7) != 0 && strncmp(endpoint, "https://", 8) != 0))
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "endpoint must be a valid http(s) URL");
+        return ESP_FAIL;
+    }
+
+    esp_err_t err = settings_set_endpoint(endpoint);
+    if (err != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store endpoint");
+        return ESP_FAIL;
+    }
+
+    *any_field = true;
+    return ESP_OK;
+}
+
+static esp_err_t apply_name_item(cJSON *root, httpd_req_t *req, bool *any_field)
+{
+    cJSON *name_item = cJSON_GetObjectItemCaseSensitive(root, "deviceName");
+    if (name_item == NULL)
+    {
+        return ESP_OK;
+    }
+
+    if (!cJSON_IsString(name_item))
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "'deviceName' must be a string");
+        return ESP_FAIL;
+    }
+
+    const char *name = name_item->valuestring;
+    size_t len = strlen(name);
+    if (len == 0 || len > SETTINGS_DEVICE_NAME_MAX_LEN)
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "deviceName must be 1 to 64 characters");
+        return ESP_FAIL;
+    }
+
+    esp_err_t err = settings_set_device_name(name);
+    if (err != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store device name");
+        return ESP_FAIL;
+    }
+
+    *any_field = true;
+    return ESP_OK;
+}
+
+static esp_err_t apply_interval_item(cJSON *root, httpd_req_t *req, bool *any_field)
+{
+    cJSON *interval_item = cJSON_GetObjectItemCaseSensitive(root, "measurementInterval");
+    if (interval_item == NULL)
+    {
+        return ESP_OK;
+    }
+
+    if (!cJSON_IsNumber(interval_item) ||
+        interval_item->valuedouble != (double)interval_item->valueint ||
+        interval_item->valueint < SETTINGS_MEASUREMENT_INTERVAL_MIN_SECONDS ||
+        interval_item->valueint > SETTINGS_MEASUREMENT_INTERVAL_MAX_SECONDS)
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "measurementInterval must be an integer between 1 and 86400 seconds");
+        return ESP_FAIL;
+    }
+
+    esp_err_t err = settings_set_measurement_interval((uint32_t)interval_item->valueint);
+    if (err != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store measurement interval");
+        return ESP_FAIL;
+    }
+
+    *any_field = true;
+    return ESP_OK;
+}
+
+static esp_err_t handle_json_post(httpd_req_t *req,
+                                  const apply_item_fn *appliers,
+                                  size_t applier_count,
+                                  const char *no_fields_msg)
 {
     char buf[SETTINGS_ENDPOINT_MAX_LEN + 32];
     int total_len = req->content_len;
@@ -57,94 +159,20 @@ static esp_err_t config_post_handler(httpd_req_t *req)
     }
 
     bool any_field = false;
-
-    cJSON *endpoint_item = cJSON_GetObjectItemCaseSensitive(root, "endpoint");
-    if (endpoint_item != NULL)
+    for (size_t i = 0; i < applier_count; i++)
     {
-        if (!cJSON_IsString(endpoint_item))
+        if (appliers[i](root, req, &any_field) != ESP_OK)
         {
             cJSON_Delete(root);
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "'endpoint' must be a string");
             return ESP_FAIL;
         }
-
-        const char *endpoint = endpoint_item->valuestring;
-        size_t len = strlen(endpoint);
-        if (len == 0 || len > SETTINGS_ENDPOINT_MAX_LEN ||
-            (strncmp(endpoint, "http://", 7) != 0 && strncmp(endpoint, "https://", 8) != 0))
-        {
-            cJSON_Delete(root);
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "endpoint must be a valid http(s) URL");
-            return ESP_FAIL;
-        }
-
-        esp_err_t err = settings_set_endpoint(endpoint);
-        if (err != ESP_OK)
-        {
-            cJSON_Delete(root);
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store endpoint");
-            return ESP_FAIL;
-        }
-        any_field = true;
-    }
-
-    cJSON *name_item = cJSON_GetObjectItemCaseSensitive(root, "deviceName");
-    if (name_item != NULL)
-    {
-        if (!cJSON_IsString(name_item))
-        {
-            cJSON_Delete(root);
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "'deviceName' must be a string");
-            return ESP_FAIL;
-        }
-
-        const char *name = name_item->valuestring;
-        size_t len = strlen(name);
-        if (len == 0 || len > SETTINGS_DEVICE_NAME_MAX_LEN)
-        {
-            cJSON_Delete(root);
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "deviceName must be 1 to 64 characters");
-            return ESP_FAIL;
-        }
-
-        esp_err_t err = settings_set_device_name(name);
-        if (err != ESP_OK)
-        {
-            cJSON_Delete(root);
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store device name");
-            return ESP_FAIL;
-        }
-        any_field = true;
-    }
-
-    cJSON *interval_item = cJSON_GetObjectItemCaseSensitive(root, "measurementInterval");
-    if (interval_item != NULL)
-    {
-        if (!cJSON_IsNumber(interval_item) ||
-            interval_item->valuedouble != (double)interval_item->valueint ||
-            interval_item->valueint < SETTINGS_MEASUREMENT_INTERVAL_MIN_SECONDS ||
-            interval_item->valueint > SETTINGS_MEASUREMENT_INTERVAL_MAX_SECONDS)
-        {
-            cJSON_Delete(root);
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "measurementInterval must be an integer between 1 and 86400 seconds");
-            return ESP_FAIL;
-        }
-
-        esp_err_t err = settings_set_measurement_interval((uint32_t)interval_item->valueint);
-        if (err != ESP_OK)
-        {
-            cJSON_Delete(root);
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store measurement interval");
-            return ESP_FAIL;
-        }
-        any_field = true;
     }
 
     cJSON_Delete(root);
 
     if (!any_field)
     {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "No configurable fields provided (endpoint, deviceName, measurementInterval)");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, no_fields_msg);
         return ESP_FAIL;
     }
 
@@ -153,10 +181,74 @@ static esp_err_t config_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+static esp_err_t config_post_handler(httpd_req_t *req)
+{
+    static const apply_item_fn appliers[] = {
+        apply_endpoint_item,
+        apply_name_item,
+        apply_interval_item,
+    };
+
+    return handle_json_post(req,
+                            appliers,
+                            ARRAY_SIZE(appliers),
+                            "No configurable fields provided (endpoint, deviceName, measurementInterval)");
+}
+
 static const httpd_uri_t config_uri = {
     .uri = "/config",
     .method = HTTP_POST,
     .handler = config_post_handler,
+    .user_ctx = NULL};
+
+static esp_err_t apply_valve_state(cJSON *root, httpd_req_t *req, bool *any_field)
+{
+    cJSON *state_item = cJSON_GetObjectItemCaseSensitive(root, "state");
+    if (state_item == NULL)
+    {
+        return ESP_OK;
+    }
+
+    if (!cJSON_IsString(state_item))
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "'state' must be a string");
+        return ESP_FAIL;
+    }
+
+    const char *state = state_item->valuestring;
+    if (strcmp(state, "OPEN") != 0 && strcmp(state, "CLOSED") != 0)
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "'state' must be either OPEN or CLOSED");
+        return ESP_FAIL;
+    }
+
+    esp_err_t err = settings_set_valve_state(state);
+    if (err != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store valve state");
+        return ESP_FAIL;
+    }
+
+    *any_field = true;
+    return ESP_OK;
+}
+
+static esp_err_t valve_state_post_handler(httpd_req_t *req)
+{
+    static const apply_item_fn appliers[] = {
+        apply_valve_state,
+    };
+
+    return handle_json_post(req,
+                            appliers,
+                            ARRAY_SIZE(appliers),
+                            "No state field provided (state must be OPEN or CLOSED)");
+}
+
+static const httpd_uri_t valve_state_uri = {
+    .uri = "/valve",
+    .method = HTTP_POST,
+    .handler = valve_state_post_handler,
     .user_ctx = NULL};
 
 httpd_handle_t start_webserver(void)
@@ -168,6 +260,7 @@ httpd_handle_t start_webserver(void)
     {
         httpd_register_uri_handler(server, &ping_uri);
         httpd_register_uri_handler(server, &config_uri);
+        httpd_register_uri_handler(server, &valve_state_uri);
         ESP_LOGI(TAG, "HTTP Server started on port 80!");
         return server;
     }
