@@ -23,7 +23,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     let cancelled = false;
-
     fetchConsumption({
       range,
       interval,
@@ -48,7 +47,11 @@ export default function Dashboard() {
 
   return (
     <div style={styles.container}>
-      <Header filter={filter} onFilterChange={setFilter} onRefresh={() => setRefreshKey((k) => k + 1)} />
+      <Header
+        filter={filter}
+        onFilterChange={setFilter}
+        onRefresh={() => setRefreshKey((k) => k + 1)}
+      />
       {error && <div style={styles.error}>{error}</div>}
       <SummaryCards buckets={buckets} range={range} interval={interval} />
       <ConsumptionChart buckets={buckets} />
