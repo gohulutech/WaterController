@@ -25,3 +25,13 @@
 #define VALVE_CONTROLLER_CLOSED_GPIO 18
 #define VALVE_PULSE_MS 15000
 #define MEASUREMENT_INTERVAL_SECONDS 10
+
+/* Pulse budget: the valve is force-closed once this many pulses accumulate
+ * within DOSE_PERIOD_SECONDS. A budget of 0 disables the limit entirely. */
+#define DOSE_MAX_PULSES_DEFAULT 0
+#define DOSE_MAX_PULSES_MIN 0
+#define DOSE_MAX_PULSES_MAX 1000000
+#define DOSE_PERIOD_SECONDS_DEFAULT 60
+#define DOSE_PERIOD_SECONDS_MIN 1
+#define DOSE_PERIOD_SECONDS_MAX 86400
+#define DOSE_POLL_INTERVAL_MS 500

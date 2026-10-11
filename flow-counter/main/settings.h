@@ -18,4 +18,10 @@ esp_err_t settings_set_device_name(const char *name);
 esp_err_t settings_get_measurement_interval(uint32_t *seconds);
 esp_err_t settings_set_measurement_interval(uint32_t seconds);
 
+esp_err_t settings_get_max_pulses_per_period(uint32_t *pulses);
+esp_err_t settings_set_max_pulses_per_period(uint32_t pulses);
+
+esp_err_t settings_get_dose_period_seconds(uint32_t *seconds);
+esp_err_t settings_set_dose_period_seconds(uint32_t seconds);
+
 esp_err_t settings_set_valve_state(const char *state);

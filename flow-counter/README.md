@@ -40,6 +40,8 @@ are modified; all others keep their current value.
 | `endpoint`               | string   | no       | Valid `http://` or `https://` URL, 1–255 chars         | Where measurements are POSTed to                   |
 | `deviceName`             | string   | no       | 1–64 chars                                             | Device identifier sent with each measurement       |
 | `measurementInterval`    | integer  | no       | 1–86400 seconds                                        | Delay between consecutive measurement POSTs        |
+| `maxPulsesPerPeriod`     | integer  | no       | 0–1000000; `0` disables the limit                      | Pulses allowed within the dose period before the valve is force-closed |
+| `dosePeriodSeconds`      | integer  | no       | 1–86400 seconds                                        | Length of the window the pulse budget is counted over |
 
 **Example:**
 
@@ -60,6 +62,46 @@ curl -X POST http://<device-ip>/config \
 | `200`  | At least one valid field applied                     | `{"status":"ok"}`                     |
 | `400`  | Invalid/missing body, malformed JSON, no recognized field, or a field fails validation | Error message, e.g. `"'endpoint' must be a string"` |
 | `500`  | NVS storage failure                                  | `"Failed to store ..."`               |
+
+### `POST /valve`
+
+Drive the valve. The body must contain a `state` of exactly `"OPEN"` or
+`"CLOSED"` (uppercase). Each command energises a coil for at most 15 s
+(`VALVE_PULSE_MS`), after which both outputs are parked and the valve holds its
+position. A second command issued while a pulse is still running is rejected
+with `409` rather than queued.
+
+```bash
+curl -X POST http://<device-ip>/valve \
+  -H "Content-Type: application/json" \
+  -d '{"state":"OPEN"}'
+```
+
+| Status | Condition                                            | Body                                  |
+| ------ | ---------------------------------------------------- | ------------------------------------- |
+| `200`  | Command accepted, pulse armed                        | `{"status":"ok"}`                     |
+| `400`  | `state` missing, not a string, or not `OPEN`/`CLOSED` | Error message                         |
+| `409`  | A pulse is already in flight                         | `"Valve command already in progress"` |
+| `500`  | NVS storage or GPIO driver failure                   | Error message                         |
+
+#### Pulse budget (automatic close)
+
+If `maxPulsesPerPeriod` is greater than `0`, the device force-closes the valve
+once that many pulses have been counted within `dosePeriodSeconds`. This limit
+is enforced by a dedicated task sampling the flow counter every 500 ms, so it
+is independent of `measurementInterval`, and it preempts an in-flight pulse
+rather than being rejected as a conflict. The default budget is `0`, meaning the
+limit is **off** until you configure it.
+
+```bash
+curl -X POST http://<device-ip>/config \
+  -H "Content-Type: application/json" \
+  -d '{"maxPulsesPerPeriod": 500, "dosePeriodSeconds": 60}'
+```
+
+The commanded state is persisted in NVS, but the pulse budget is held in RAM:
+it always reflects the current period, and a reboot correctly leaves the valve
+idle rather than latching a stale "busy" state.
 
 ### Wi-Fi Provisioning Endpoints (`prov-*`)
 

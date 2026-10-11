@@ -11,13 +11,14 @@ static const char *TAG = "VALVE";
 
 static esp_timer_handle_t pulse_timer;
 static volatile bool pulse_active;
+static volatile bool valve_open;
 static StaticSemaphore_t state_mutex;
 static SemaphoreHandle_t state_lock;
 
 static void park_outputs(void)
 {
-    gpio_set_level(VALVE_CONTROLLER_OPEN_GPIO, 1);
-    gpio_set_level(VALVE_CONTROLLER_CLOSED_GPIO, 1);
+    gpio_set_level(VALVE_CONTROLLER_OPEN_GPIO, 0);
+    gpio_set_level(VALVE_CONTROLLER_CLOSED_GPIO, 0);
 }
 
 static void valve_controller_gpio_init(void)
@@ -42,6 +43,7 @@ void valve_controller_init(void)
     valve_controller_gpio_init();
     park_outputs();
     pulse_active = false;
+    valve_open = false;
 
     state_lock = xSemaphoreCreateMutexStatic(&state_mutex);
 
@@ -55,6 +57,11 @@ void valve_controller_init(void)
 bool valve_controller_is_busy(void)
 {
     return pulse_active;
+}
+
+bool valve_controller_is_open(void)
+{
+    return valve_open;
 }
 
 esp_err_t valve_controller_set_state(const char *state)
@@ -75,8 +82,31 @@ esp_err_t valve_controller_set_state(const char *state)
         return ESP_ERR_INVALID_STATE;
     }
 
-    gpio_set_level(VALVE_CONTROLLER_OPEN_GPIO, opening ? 0 : 1);
-    gpio_set_level(VALVE_CONTROLLER_CLOSED_GPIO, closing ? 0 : 1);
+    gpio_set_level(VALVE_CONTROLLER_OPEN_GPIO, opening ? 1 : 0);
+    gpio_set_level(VALVE_CONTROLLER_CLOSED_GPIO, closing ? 1 : 0);
+    valve_open = opening;
+    pulse_active = true;
+
+    esp_err_t err = esp_timer_start_once(pulse_timer, (uint64_t)VALVE_PULSE_MS * 1000ULL);
+    if (err != ESP_OK)
+    {
+        park_outputs();
+        pulse_active = false;
+    }
+
+    xSemaphoreGive(state_lock);
+    return err;
+}
+
+esp_err_t valve_controller_force_close(void)
+{
+    xSemaphoreTake(state_lock, portMAX_DELAY);
+
+    esp_timer_stop(pulse_timer);
+
+    gpio_set_level(VALVE_CONTROLLER_OPEN_GPIO, 0);
+    gpio_set_level(VALVE_CONTROLLER_CLOSED_GPIO, 1);
+    valve_open = false;
     pulse_active = true;
 
     esp_err_t err = esp_timer_start_once(pulse_timer, (uint64_t)VALVE_PULSE_MS * 1000ULL);

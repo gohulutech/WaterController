@@ -11,6 +11,7 @@
 #include "time_sync.h"
 #include "flow_sensor.h"
 #include "valve_controller.h"
+#include "dose_monitor.h"
 
 static const char *TAG = "FLOW";
 
@@ -30,6 +31,8 @@ void app_main(void)
     wifi_init_sta();
 
     flow_sensor_init();
+
+    dose_monitor_start();
 
     int previous_count = 0;
 

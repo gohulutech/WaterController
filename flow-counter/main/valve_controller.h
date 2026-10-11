@@ -10,3 +10,8 @@ void valve_controller_init(void);
 esp_err_t valve_controller_set_state(const char *state);
 
 bool valve_controller_is_busy(void);
+bool valve_controller_is_open(void);
+
+/* Safety path: cancels any in-flight pulse and drives CLOSED regardless of
+ * the busy flag, so a dose-limit close can never be rejected as a conflict. */
+esp_err_t valve_controller_force_close(void);

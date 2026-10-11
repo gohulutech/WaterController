@@ -1,6 +1,7 @@
 #include "http_server.h"
 #include "settings.h"
 #include "valve_controller.h"
+#include "config.h"
 #include "esp_log.h"
 #include "cJSON.h"
 #include <stdbool.h>
@@ -121,6 +122,60 @@ static esp_err_t apply_interval_item(cJSON *root, httpd_req_t *req, bool *any_fi
     return ESP_OK;
 }
 
+static esp_err_t apply_max_pulses_item(cJSON *root, httpd_req_t *req, bool *any_field)
+{
+    cJSON *item = cJSON_GetObjectItemCaseSensitive(root, "maxPulsesPerPeriod");
+    if (item == NULL)
+    {
+        return ESP_OK;
+    }
+
+    if (!cJSON_IsNumber(item) ||
+        item->valuedouble != (double)item->valueint ||
+        item->valueint < DOSE_MAX_PULSES_MIN ||
+        item->valueint > DOSE_MAX_PULSES_MAX)
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "maxPulsesPerPeriod must be an integer between 0 and 1000000 (0 disables the limit)");
+        return ESP_FAIL;
+    }
+
+    if (settings_set_max_pulses_per_period((uint32_t)item->valueint) != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store maxPulsesPerPeriod");
+        return ESP_FAIL;
+    }
+
+    *any_field = true;
+    return ESP_OK;
+}
+
+static esp_err_t apply_dose_period_item(cJSON *root, httpd_req_t *req, bool *any_field)
+{
+    cJSON *item = cJSON_GetObjectItemCaseSensitive(root, "dosePeriodSeconds");
+    if (item == NULL)
+    {
+        return ESP_OK;
+    }
+
+    if (!cJSON_IsNumber(item) ||
+        item->valuedouble != (double)item->valueint ||
+        item->valueint < DOSE_PERIOD_SECONDS_MIN ||
+        item->valueint > DOSE_PERIOD_SECONDS_MAX)
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "dosePeriodSeconds must be an integer between 1 and 86400 seconds");
+        return ESP_FAIL;
+    }
+
+    if (settings_set_dose_period_seconds((uint32_t)item->valueint) != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store dosePeriodSeconds");
+        return ESP_FAIL;
+    }
+
+    *any_field = true;
+    return ESP_OK;
+}
+
 static esp_err_t handle_json_post(httpd_req_t *req,
                                   const apply_item_fn *appliers,
                                   size_t applier_count,
@@ -188,12 +243,14 @@ static esp_err_t config_post_handler(httpd_req_t *req)
         apply_endpoint_item,
         apply_name_item,
         apply_interval_item,
+        apply_max_pulses_item,
+        apply_dose_period_item,
     };
 
     return handle_json_post(req,
                             appliers,
                             ARRAY_SIZE(appliers),
-                            "No configurable fields provided (endpoint, deviceName, measurementInterval)");
+                            "No configurable fields provided (endpoint, deviceName, measurementInterval, maxPulsesPerPeriod, dosePeriodSeconds)");
 }
 
 static const httpd_uri_t config_uri = {
