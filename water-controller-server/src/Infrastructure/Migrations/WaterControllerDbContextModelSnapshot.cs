@@ -21,34 +21,190 @@ namespace Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Model.Device", b =>
+                {
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("DeviceTypeId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("DeviceId");
+
+                    b.HasIndex("DeviceTypeId");
+
+                    b.ToTable("devices", (string)null);
+                });
+
+            modelBuilder.Entity("Model.DeviceMetric", b =>
+                {
+                    b.Property<string>("DeviceId")
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("MetricId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("DeviceId", "MetricId");
+
+                    b.HasIndex("MetricId");
+
+                    b.ToTable("device_metrics", (string)null);
+                });
+
+            modelBuilder.Entity("Model.DeviceType", b =>
+                {
+                    b.Property<int>("DeviceTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DeviceTypeId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("DeviceTypeId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("device_types", (string)null);
+                });
+
             modelBuilder.Entity("Model.Measurement", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<long>("MeasurementId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("MeasurementId"));
 
                     b.Property<string>("DeviceId")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasJsonPropertyName("device_id");
+                        .HasColumnType("character varying(100)");
 
-                    b.Property<int>("IntervalSeconds")
-                        .HasColumnType("integer")
-                        .HasJsonPropertyName("intervalSeconds");
-
-                    b.Property<int>("Pulses")
-                        .HasColumnType("integer")
-                        .HasJsonPropertyName("pulses");
+                    b.Property<int>("MetricId")
+                        .HasColumnType("integer");
 
                     b.Property<long>("Timestamp")
-                        .HasColumnType("bigint")
-                        .HasJsonPropertyName("timestamp");
+                        .HasColumnType("bigint");
 
-                    b.HasKey("Id");
+                    b.Property<double>("Value")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("MeasurementId");
+
+                    b.HasIndex("MetricId");
+
+                    b.HasIndex("DeviceId", "MetricId", "Timestamp");
 
                     b.ToTable("measurements", (string)null);
+                });
+
+            modelBuilder.Entity("Model.Metric", b =>
+                {
+                    b.Property<int>("MetricId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MetricId"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("MetricId");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("metrics", (string)null);
+                });
+
+            modelBuilder.Entity("Model.Device", b =>
+                {
+                    b.HasOne("Model.DeviceType", "DeviceType")
+                        .WithMany("Devices")
+                        .HasForeignKey("DeviceTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DeviceType");
+                });
+
+            modelBuilder.Entity("Model.DeviceMetric", b =>
+                {
+                    b.HasOne("Model.Device", "Device")
+                        .WithMany("DeviceMetrics")
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Model.Metric", "Metric")
+                        .WithMany("DeviceMetrics")
+                        .HasForeignKey("MetricId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+
+                    b.Navigation("Metric");
+                });
+
+            modelBuilder.Entity("Model.Measurement", b =>
+                {
+                    b.HasOne("Model.Device", "Device")
+                        .WithMany("Measurements")
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Model.Metric", "Metric")
+                        .WithMany("Measurements")
+                        .HasForeignKey("MetricId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+
+                    b.Navigation("Metric");
+                });
+
+            modelBuilder.Entity("Model.Device", b =>
+                {
+                    b.Navigation("DeviceMetrics");
+
+                    b.Navigation("Measurements");
+                });
+
+            modelBuilder.Entity("Model.DeviceType", b =>
+                {
+                    b.Navigation("Devices");
+                });
+
+            modelBuilder.Entity("Model.Metric", b =>
+                {
+                    b.Navigation("DeviceMetrics");
+
+                    b.Navigation("Measurements");
                 });
 #pragma warning restore 612, 618
         }

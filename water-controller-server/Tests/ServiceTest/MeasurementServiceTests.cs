@@ -39,9 +39,12 @@ public class MeasurementServiceTests : IDisposable
 
         var saved = await _db.Measurements.SingleAsync();
         Assert.Equal("device-1", saved.DeviceId);
-        Assert.Equal(10, saved.IntervalSeconds);
-        Assert.Equal(100, saved.Pulses);
+        Assert.Equal(100.0, saved.Value);
         Assert.Equal(1234567890, saved.Timestamp);
+
+        var metric = await _db.Metrics.SingleAsync();
+        Assert.Equal(Metric.FlowPulsesCode, metric.Code);
+        Assert.Equal(metric.MetricId, saved.MetricId);
     }
 
     [Fact]
@@ -55,6 +58,17 @@ public class MeasurementServiceTests : IDisposable
         Assert.Equal(10, result.IntervalSeconds);
         Assert.Equal(1234567890, result.Timestamp);
         Assert.Equal(450.0 / 450 / 10, result.LitersPerSecond, 6);
+    }
+
+    [Fact]
+    public async Task AddMeasurement_ReturnsMeasurementIdAsId()
+    {
+        var input = new MeasurementInputDto("device-1", 10, 450, 1234567890);
+
+        var result = await _sut.AddMeasurement(input);
+
+        var saved = await _db.Measurements.SingleAsync();
+        Assert.Equal(saved.MeasurementId, result.Id);
     }
 
     [Fact]
@@ -78,6 +92,55 @@ public class MeasurementServiceTests : IDisposable
         await _sut.AddMeasurement(new MeasurementInputDto("device-1", 10, 100, 1000));
         await _sut.AddMeasurement(new MeasurementInputDto("device-2", 5, 200, 2000));
 
+        Assert.Equal(2, await _db.Measurements.CountAsync());
+    }
+
+    [Fact]
+    public async Task AddMeasurement_AutoProvisionsCatalog()
+    {
+        await _sut.AddMeasurement(new MeasurementInputDto("device-1", 10, 100, 1234567890));
+
+        var deviceType = await _db.DeviceTypes.SingleAsync();
+        Assert.Equal("Flow Sensor", deviceType.Name);
+
+        var metric = await _db.Metrics.SingleAsync();
+        Assert.Equal(Metric.FlowPulsesCode, metric.Code);
+        Assert.Equal("Flow pulses", metric.Name);
+        Assert.Equal("pulses", metric.Unit);
+
+        var device = await _db.Devices.SingleAsync();
+        Assert.Equal("device-1", device.DeviceId);
+        Assert.Equal("device-1", device.Name);
+        Assert.Equal(deviceType.DeviceTypeId, device.DeviceTypeId);
+
+        var link = await _db.DeviceMetrics.SingleAsync();
+        Assert.Equal("device-1", link.DeviceId);
+        Assert.Equal(metric.MetricId, link.MetricId);
+    }
+
+    [Fact]
+    public async Task AddMeasurement_RepeatedCalls_ReuseCatalog()
+    {
+        await _sut.AddMeasurement(new MeasurementInputDto("device-1", 10, 100, 1000));
+        await _sut.AddMeasurement(new MeasurementInputDto("device-1", 10, 200, 2000));
+
+        Assert.Equal(1, await _db.DeviceTypes.CountAsync());
+        Assert.Equal(1, await _db.Metrics.CountAsync());
+        Assert.Equal(1, await _db.Devices.CountAsync());
+        Assert.Equal(1, await _db.DeviceMetrics.CountAsync());
+        Assert.Equal(2, await _db.Measurements.CountAsync());
+    }
+
+    [Fact]
+    public async Task AddMeasurement_SecondDevice_CreatesSecondDeviceAndLink_ReusesTypeAndMetric()
+    {
+        await _sut.AddMeasurement(new MeasurementInputDto("device-1", 10, 100, 1000));
+        await _sut.AddMeasurement(new MeasurementInputDto("device-2", 10, 100, 2000));
+
+        Assert.Equal(1, await _db.DeviceTypes.CountAsync());
+        Assert.Equal(1, await _db.Metrics.CountAsync());
+        Assert.Equal(2, await _db.Devices.CountAsync());
+        Assert.Equal(2, await _db.DeviceMetrics.CountAsync());
         Assert.Equal(2, await _db.Measurements.CountAsync());
     }
 }

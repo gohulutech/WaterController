@@ -31,8 +31,9 @@ public sealed class ConsumptionService(WaterControllerDbContext db) : IConsumpti
                 m.Timestamp >= rangeStart
                 && m.Timestamp < rangeEnd
                 && (deviceId == null || m.DeviceId == deviceId)
+                && m.Metric.Code == Metric.FlowPulsesCode
             )
-            .Select(m => new { m.Timestamp, m.Pulses })
+            .Select(m => new { m.Timestamp, m.Value })
             .ToListAsync();
 
         var buckets = new List<ConsumptionBucketDto>(bucketCount);
@@ -57,7 +58,7 @@ public sealed class ConsumptionService(WaterControllerDbContext db) : IConsumpti
                 continue;
             }
 
-            var liters = m.Pulses / (double)Device.PulsesPerLiter;
+            var liters = m.Value / (double)Device.PulsesPerLiter;
             buckets[index] = buckets[index] with { Liters = buckets[index].Liters + liters };
         }
 
