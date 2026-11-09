@@ -26,6 +26,41 @@ public class ConsumptionServiceTests : IDisposable
         _db.Dispose();
     }
 
+    private async Task<Metric> SeedMetric(string code, string name, string unit)
+    {
+        var metric = new Metric { Code = code, Name = name, Unit = unit };
+        _db.Metrics.Add(metric);
+        await _db.SaveChangesAsync();
+        return metric;
+    }
+
+    private async Task AddMeasurement(Metric metric, string deviceId, double value, long timestamp)
+    {
+        _db.Measurements.Add(
+            new Measurement
+            {
+                DeviceId = deviceId,
+                MetricId = metric.MetricId,
+                Timestamp = timestamp,
+                Value = value,
+                Metric = metric,
+            });
+        await _db.SaveChangesAsync();
+    }
+
+    private async Task<Metric> SeedFlowPulsesAsync()
+    {
+        var deviceType = new DeviceType { Name = "Flow Sensor" };
+        var metric = new Metric { Code = Metric.FlowPulsesCode, Name = "Flow pulses", Unit = "pulses" };
+        var device = new Device { DeviceId = "device-1", Name = "device-1", DeviceType = deviceType };
+        _db.DeviceTypes.Add(deviceType);
+        _db.Metrics.Add(metric);
+        _db.Devices.Add(device);
+        _db.DeviceMetrics.Add(new DeviceMetric { Device = device, Metric = metric });
+        await _db.SaveChangesAsync();
+        return metric;
+    }
+
     [Fact]
     public async Task GetConsumption_EmptyDatabase_ReturnsZeroLiters()
     {
@@ -39,11 +74,10 @@ public class ConsumptionServiceTests : IDisposable
     [Fact]
     public async Task GetConsumption_SingleMeasurement_AppearsInCorrectBucket()
     {
+        var metric = await SeedFlowPulsesAsync();
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         // range=600, interval=300 → 2 buckets: [now-600, now-300) and [now-300, now)
-        var measurement = new Measurement("device-1", 10, 450, now - 100);
-        _db.Measurements.Add(measurement);
-        await _db.SaveChangesAsync();
+        await AddMeasurement(metric, "device-1", 450, now - 100);
 
         var result = await _sut.GetConsumption(600, 300);
 
@@ -56,12 +90,10 @@ public class ConsumptionServiceTests : IDisposable
     [Fact]
     public async Task GetConsumption_MultipleMeasurements_SumsWithinBucket()
     {
+        var metric = await SeedFlowPulsesAsync();
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        _db.Measurements.AddRange(
-            new Measurement("device-1", 10, 225, now - 50),
-            new Measurement("device-1", 10, 225, now - 80)
-        );
-        await _db.SaveChangesAsync();
+        await AddMeasurement(metric, "device-1", 225, now - 50);
+        await AddMeasurement(metric, "device-1", 225, now - 80);
 
         var result = await _sut.GetConsumption(600, 600);
 
@@ -72,13 +104,11 @@ public class ConsumptionServiceTests : IDisposable
     [Fact]
     public async Task GetConsumption_MeasurementsAcrossBuckets_DistributesCorrectly()
     {
+        var metric = await SeedFlowPulsesAsync();
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         // Two buckets: [0, 300) and [300, 600)
-        _db.Measurements.AddRange(
-            new Measurement("device-1", 10, 450, now - 100), // bucket 0
-            new Measurement("device-1", 10, 900, now - 400) // bucket 1
-        );
-        await _db.SaveChangesAsync();
+        await AddMeasurement(metric, "device-1", 450, now - 100); // bucket 0
+        await AddMeasurement(metric, "device-1", 900, now - 400); // bucket 1
 
         var result = await _sut.GetConsumption(600, 300);
 
@@ -89,12 +119,10 @@ public class ConsumptionServiceTests : IDisposable
     [Fact]
     public async Task GetConsumption_DeviceFilter_OnlyReturnsMatchingDevice()
     {
+        var metric = await SeedFlowPulsesAsync();
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        _db.Measurements.AddRange(
-            new Measurement("device-1", 10, 450, now - 100),
-            new Measurement("device-2", 10, 450, now - 100)
-        );
-        await _db.SaveChangesAsync();
+        await AddMeasurement(metric, "device-1", 450, now - 100);
+        await AddMeasurement(metric, "device-2", 450, now - 100);
 
         var result = await _sut.GetConsumption(600, 600, "device-1");
 
@@ -105,12 +133,10 @@ public class ConsumptionServiceTests : IDisposable
     [Fact]
     public async Task GetConsumption_DeviceFilterNull_ReturnsAllDevices()
     {
+        var metric = await SeedFlowPulsesAsync();
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        _db.Measurements.AddRange(
-            new Measurement("device-1", 10, 450, now - 100),
-            new Measurement("device-2", 10, 450, now - 100)
-        );
-        await _db.SaveChangesAsync();
+        await AddMeasurement(metric, "device-1", 450, now - 100);
+        await AddMeasurement(metric, "device-2", 450, now - 100);
 
         var result = await _sut.GetConsumption(600, 600, null);
 
@@ -120,12 +146,25 @@ public class ConsumptionServiceTests : IDisposable
     [Fact]
     public async Task GetConsumption_MeasurementOutsideRange_IsExcluded()
     {
+        var metric = await SeedFlowPulsesAsync();
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        _db.Measurements.AddRange(
-            new Measurement("device-1", 10, 450, now - 100), // in range
-            new Measurement("device-1", 10, 450, now - 1000) // out of range (1000s ago, range is 600s)
-        );
-        await _db.SaveChangesAsync();
+        await AddMeasurement(metric, "device-1", 450, now - 100); // in range
+        await AddMeasurement(metric, "device-1", 450, now - 1000); // out of range
+
+        var result = await _sut.GetConsumption(600, 600);
+
+        Assert.Equal(1.0, result.TotalLiters, 2);
+    }
+
+    [Fact]
+    public async Task GetConsumption_IgnoresNonFlowPulsesMetrics()
+    {
+        var metric = await SeedFlowPulsesAsync();
+        var otherMetric = await SeedMetric("temperature", "Temperature", "celsius");
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        await AddMeasurement(metric, "device-1", 450, now - 100);
+        await AddMeasurement(otherMetric, "device-1", 450, now - 100);
 
         var result = await _sut.GetConsumption(600, 600);
 
@@ -135,7 +174,6 @@ public class ConsumptionServiceTests : IDisposable
     [Fact]
     public async Task GetConsumption_BucketCount_MatchesCeilingOfRangeDivInterval()
     {
-        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         // range=1000, interval=300 → ceil(1000/300) = 4 buckets
         var result = await _sut.GetConsumption(1000, 300);
 
@@ -145,7 +183,6 @@ public class ConsumptionServiceTests : IDisposable
     [Fact]
     public async Task GetConsumption_BucketTimestamps_CorrectlySpaced()
     {
-        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var rangeSeconds = 600L;
         var intervalSeconds = 300L;
 

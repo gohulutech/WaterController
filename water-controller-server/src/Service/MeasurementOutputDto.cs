@@ -14,11 +14,14 @@ public sealed record MeasurementOutputDto(
     [property: JsonPropertyName("timestamp")] long Timestamp,
     [property: JsonPropertyName("litersPerSecond")] double LitersPerSecond)
 {
-    public static MeasurementOutputDto FromMeasurement(Measurement measurement) =>
+    public static MeasurementOutputDto FromMeasurement(
+        Measurement measurement,
+        int intervalSeconds,
+        int pulses) =>
         new(
-            measurement.Id,
+            measurement.MeasurementId,
             measurement.DeviceId,
-            measurement.IntervalSeconds,
+            intervalSeconds,
             measurement.Timestamp,
-            measurement.Pulses / (double)Device.PulsesPerLiter / measurement.IntervalSeconds);
+            pulses / (double)Device.PulsesPerLiter / intervalSeconds);
 }

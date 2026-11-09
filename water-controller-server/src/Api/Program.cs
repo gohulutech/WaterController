@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddScoped<IMeasurementService, MeasurementService>();
 builder.Services.AddScoped<IConsumptionService, ConsumptionService>();
+builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddDbContext<WaterControllerDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("WaterController")));
 builder.Services.AddOpenApi();
